@@ -1,6 +1,6 @@
 # Orbital-Components
 
-Given the state vector of an orbit, this program will return the following orbital parameters:
+Given the state vector of an orbit, this program will return the following orbital parameters (and render a plot of any relevant vectors):
 
 - Current distance from the focus (r)
 - Magnitude of the current velocity (v)
