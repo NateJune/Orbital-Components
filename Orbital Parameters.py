@@ -1,9 +1,11 @@
 
 # coding: utf-8
 
-# In[36]:
+# In[143]:
 
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 
@@ -109,7 +111,25 @@ def arg_perigee(N, e, n, e_abs):
     return w
 
 
-# In[132]:
+# In[139]:
+
+
+def tru_anomaly(e, R, v_rad):
+    
+    e_abs = (np.dot(e,e))**(1/2)
+    
+    if v_rad >= 0:
+        Theta = np.arccos(np.dot(e,R)/(e_abs*r))
+    else:
+        Theta = 2*np.pi - np.arccos(np.dot(e,R)/(e_abs*r))
+    theta = Theta*180/np.pi
+    
+    return e_abs, Theta
+    
+    
+
+
+# In[191]:
 
 
 # This function will return all orbital elements given the position and velocity vectors of a craft.
@@ -130,6 +150,9 @@ def orbital_elements(R,V,mu=None):
     
     #Tangential Componenet of Velocity
     v_tan = (v**2 - v_rad**2)**(1/2)
+    
+    #Flight Angle at this value of R and V
+    gam = np.arctan(v_rad/v_tan)*180/np.pi
     
     #calling ang_mom to get vector and scalar forms of h
     H, h = ang_mom(R,V)
@@ -154,16 +177,12 @@ def orbital_elements(R,V,mu=None):
     w = arg_perigee(N, e, n, e_abs)
         
     #True Anolmaly
-    if v_rad >= 0:
-        Theta = np.arccos(np.dot(e,R)/(e_abs*r))
-    else:
-        Theta = 2*np.pi - np.arccos(np.dot(e,R)/(e_abs*r))
-    theta = Theta*180/np.pi
+    Theta = tru_anomaly(e, R, v_rad)
     
     r_p = distance(h, e_abs, 0)
     r_a = distance(h, e_abs, np.pi)
     a = semi_major(r_p,r_a)
-    b = a*(1-e**2)**(1/2)
+    b = a*(1 - (e_abs**2))**(1/2)
     
     T = orbital_period(a)
     
@@ -171,6 +190,7 @@ def orbital_elements(R,V,mu=None):
     print("The distance from the focus to the craft is: " + str(r))
     print("The magnitude of the craft's current velocity is: " + str(v))
     print("The magnitude of the craft's current radial velocity is: " + str(v_rad))
+    print("The current flight path angle is: " + str(round(gam, 2)))
     print("The magnitude of the craft's current tangential velocity is: " + str(v_tan))
     print("The angular momentum vector is: " + str(H))
     print("The magnitude of the angular momentum is: " + str(h))
@@ -188,21 +208,49 @@ def orbital_elements(R,V,mu=None):
     print("The semi-minor axis of the orbit is: " + str(b))
     print("The period of the orbit (in seconds) is: " + str(T))
         
-    return r, v, v_rad, v_tan, H, h, i, N, n, O, e, e_abs, w, theta, r_p, r_a, a, b, T
+    return r, v, v_rad, v_tan, gam, H, h, i, N, n, O, e, e_abs, w, theta, r_p, r_a, a, b, T
 
 
     
 
 
-# In[137]:
+# In[192]:
 
 
 R = np.asarray([-6600, -1300, -5200], dtype='int64')
 V = np.asarray([-0.4, -0.5, -0.6])
 
 
-# In[138]:
+# In[193]:
 
 
-r, v, v_rad, v_tan, H, h, i, N, n, O, e, e_abs, w, theta, r_p, r_a, a, b, T = orbital_elements(R,V)
+r, v, v_rad, v_tan, gam, H, h, i, N, n, O, e, e_abs, w, theta, r_p, r_a, a, b, T = orbital_elements(R,V)
+
+
+# In[169]:
+
+
+R_norm = (1/(R[0]**2+R[1]**2+R[2]**2)**(1/2))*R
+V_norm = (1/(V[0]**2+V[1]**2+V[2]**2)**(1/2))*V
+H_norm = (1/h)*H
+N_norm = (1/n)*N
+
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.set_xlim([-1,1])
+ax.set_ylim([-1,1])
+ax.set_zlim([-1,1])
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+
+start = [0,0,0]
+ax.quiver(start[0],start[1],start[2],R_norm[0],R_norm[1],R_norm[2])
+ax.quiver(R_norm[0],R_norm[1],R_norm[2],R_norm[0]-V_norm[0],R_norm[1]-V_norm[1],R_norm[2]-V_norm[2], color='red')
+ax.quiver(R_norm[0],R_norm[1],R_norm[2],H_norm[0]-R_norm[0],H_norm[1]-R_norm[1],H_norm[2]-R_norm[2], color='green')
+ax.quiver(start[0],start[1],start[2],N_norm[0],N_norm[1],N_norm[2], color='grey')
+ax.quiver(start[0],start[1],start[2],-N_norm[0],-N_norm[1],-N_norm[2], color='grey')
+ax.quiver(start[0],start[1],start[2],e[0],e[1],e[2],color='pink')
+
+plt.show()
 
